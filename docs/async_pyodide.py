@@ -44,7 +44,7 @@ class _GatherFutures:
     
     async def _gatherCallback(tasks,future):        
         if task in self.tasks:
-            self.tasks.del(task)
+            self.tasks.remove(task)
             print("Task ended")
         else:
             print("Missing task")
