@@ -35,6 +35,23 @@ async def aimport(namePairs):
     for (module,alias) in namePairs:
         await _aimport(module,alias)
 
+class _GatherFutures:
+    def __init__(self,tasks,future):
+        self.tasks=tasks
+        self.future=future
+        for task in self.tasks:
+            task.add_done_callback(self._gatherCallback)
+    
+    async def _gatherCallback(tasks,future):        
+        if task in self.tasks:
+            self.tasks.del(task)
+            print("Task ended")
+        else:
+            print("Missing task")
+        if len(self.tasks)==0:
+            self.future.set_result(1)
+    
+
 async def gather(*coroutines,return_exceptions=False):
     allTasks=[]
     global __jsloop
@@ -42,8 +59,7 @@ async def gather(*coroutines,return_exceptions=False):
     for c in coroutines:
         task=__jsloop.create_task(c)    
         allTasks.append(task)
-    for t in allTasks:
-        await t
+    gf=_GatherFutures(allTasks)
     return (await future)
         
 
