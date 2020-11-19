@@ -340,7 +340,7 @@ class _LineOffsetter(NodeTransformer):
 def __compile_with_async_sleep(code_str):
     asleep_def="""
 import sys
-from async_pyodide import asleep,aimport
+from async_pyodide import asleep,aimport,gather
 
 async def __async_main():
 """
