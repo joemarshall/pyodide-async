@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+
+  <script src="https://pyodide-cdn2.iodide.io/v0.15.0/full/pyodide.js"></script>
+  
+  <script>
+  
+	
+  // get the accelerometer
+	
+	var count=0;
+	
+	function handleMotion(event) 
+	{
+	count+=1;
+		var accel=document.getElementById("accelData");
+		accel.innerHTML=count+"["+event.accelerationIncludingGravity.x+ ":"+event.accelerationIncludingGravity.y+":"+event.accelerationIncludingGravity.z+"]";
+	}
+
+  
+function startAccel()
+{
+// Request permission for iOS 13+ devices
+/*  if (
+    DeviceMotionEvent &&
+    typeof DeviceMotionEvent.requestPermission === "function"
+  ) {
+    DeviceMotionEvent.requestPermission();
+  }*/
+	window.addEventListener("devicemotion", handleMotion);
+
+	//window.addEventListener("deviceorientation", handleOrientation);
+}
+
+
+
+  </script>
+
+<script>
+
+
+languagePluginLoader
+.then(() => {
+	fetch('async_pyodide.py').then(response => response.text()).then((data) => {
+			init_code=data;
+			// load the initial python file as async_pyodide module in python
+			
+			pyodide.runPythonAsync(`
+import js			
+import importlib.util
+spec = importlib.util.spec_from_loader('async_pyodide', loader=None, origin="pyodide_init.py")
+async_pyodide = importlib.util.module_from_spec(spec)
+exec(js.init_code, async_pyodide.__dict__)
+sys.modules['async_pyodide']=async_pyodide		
+`
+			).then(value=>{
+				document.getElementById("run_button").disabled=false;
+				pyodide=this.pyodide;
+			},reason=>{python_err_print(reason);});
+			
+			
+		})	
+})
+
+function python_import(module,alias,future)
+{
+	console.log("Import ",module)
+	if(alias)
+	{
+		pyodide.runPythonAsync("import " +module +" as "+alias).then(value=>{future.set_result(1)},reason=>{python_err_print(reason);});
+	}else
+	{
+		pyodide.runPythonAsync("import " +module).then(value=>{future.set_result(1)},reason=>{python_err_print(reason);});
+	}
+	
+}
+
+function python_print(str)
+{
+	// this uses a dummy element to convert tag characters quotes etc. to html
+	dummy=document.createElement("span");
+	dummy.textContent=str;
+	document.getElementById("script_output").innerHTML+=dummy.innerHTML;
+}
+
+function python_err_print(str)
+{
+	// this uses a dummy element to convert tag characters quotes etc. to html
+	dummy=document.createElement("span");
+	dummy.textContent=str;
+	dummy.style="color:#f00;";
+	document.getElementById("script_output").innerHTML+=dummy.outerHTML;
+}
+
+var python_loop_id;
+
+function python_loop()
+{
+	console.log("loop");
+	pyodide.runPythonAsync("async_pyodide.__jsloop.run_once()").then(result=>{},reason=>{python_err_print(reason);});
+}
+
+function python_schedule(triggerTime)
+{
+	if (triggerTime>=0)
+	{
+		//console.log("Schedule: "+triggerTime);
+		window.clearInterval(python_loop_id);
+		python_loop_id=-1;
+		python_loop_id=window.setTimeout(python_loop,triggerTime*1000)
+	}
+}
+
+function python_start(task)
+{
+// start the python event loop
+python_schedule(0)
+//#	python_loop_id=window.setInterval(python_loop,10)
+}
+
+function python_stop(task)
+{
+// stop the python event loop
+	window.clearInterval(python_loop_id)
+}
+
+function run_code()
+{
+    document.getElementById("script_output").innerHTML="";
+	localStorage.lastCode=editor.getSession().getValue();
+	src_code=editor.getSession().getValue();
+	pyodide.runPythonAsync("async_pyodide.__js_run_async(js.src_code)").then(value=>{},reason=>{python_err_print(reason);});
+}
+</script>
+</head>
+<body style="min-height:100vh" onload="startAccel();startEditor()">
+
+<div id="codearea" style="width:100%;height:20vh;">
+import js
+js.python_print("WOO\n")
+</div>
+
+
+		<script>
+			window.addEventListener("beforeunload", function(event) { 
+			localStorage.lastCode=editor.getSession().getValue();});
+		
+			var require = { paths: {  'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.21.2/min/vs'  } };
+		</script>
+		<script src="https://cdn.jsdelivr.net/npm/ace-builds/src-min-noconflict/ace.js"></script>
+		
+		<script>
+			function startEditor()
+			{
+				editor = ace.edit("codearea");
+				editor.session.setMode("ace/mode/python");
+				if (localStorage.lastCode) 
+				{
+					editor.session.setValue(localStorage.lastCode);
+				}
+			
+			}
+		</script>
+
+<div>
+<button disabled="true" id="run_button" onclick="run_code()">Run code</button>
+</div>
+<div id="output_area" style="font-family:monospace; white-space: pre-wrap;height:50vh;overflow: scroll;">
+<div id="script_output">OUTPUT FROM SCRIPT GOES HERE</div>
+</div>
+
+<div id="accelData">
+ACCEL DATA COMES HERE
+</div>
+
+
+</body>
+</html>
