@@ -15,6 +15,7 @@ There's a basic implementation of futures, tasks etc. which can be used to imple
 [Demo live coding environment](async_pyodide_demo.html)
 
 <a onclick="async_demo()">Demo of two async coroutines</a>
+<a onclick="sync_demo()">Demo of running sync code in browser with sleep</a>
 
 
 
@@ -36,4 +37,16 @@ await gather(woo(2),buzz(.3))
 `
 window.location.href="async_pyodide_demo.html";
 }
+
+function sync_demo()
+{
+	localStorage.lastCode = `
+import time
+while True:
+    print("woo")
+    time.sleep(1.0)
+    `
+window.location.href="async_pyodide_demo.html";
+}
+
 </script>
