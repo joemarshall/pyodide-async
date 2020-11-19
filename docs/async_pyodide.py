@@ -59,7 +59,7 @@ async def gather(*coroutines,return_exceptions=False):
     for c in coroutines:
         task=__jsloop.create_task(c)    
         allTasks.append(task)
-    gf=_GatherFutures(allTasks)
+    gf=_GatherFutures(allTasks,future)
     return (await future)
         
 
