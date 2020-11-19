@@ -37,11 +37,15 @@ async def aimport(namePairs):
 
 async def gather(*coroutines,return_exceptions=False):
     allTasks=[]
+    global __jsloop
+    future = __jsloop.create_future()
     for c in coroutines:
         task=__jsloop.create_task(c)    
         allTasks.append(task)
     for t in allTasks:
         await t
+    return (await future)
+        
 
 # task or future (future = task without a coroutine to call)
 class JSAsyncTask():
