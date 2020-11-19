@@ -1,4 +1,4 @@
-#this module gets imported as async_pyodide
+#this module gets imported as async_pyodide by javascript / python cunningness
 from ast import *
 import sys
 
@@ -34,7 +34,14 @@ async def _aimport(module,alias):
 async def aimport(namePairs):
     for (module,alias) in namePairs:
         await _aimport(module,alias)
-    
+
+async def gather(*coroutines,*,return_exceptions=False):
+    allTasks=[]
+    for c in coroutines:
+        task=__jsloop.create_task(c)    
+        allTasks.append(task)
+    for c in coroutines:
+        await c
 
 # task or future (future = task without a coroutine to call)
 class JSAsyncTask():
