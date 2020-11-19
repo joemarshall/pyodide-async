@@ -13,3 +13,27 @@ I haven't implemented asynchronous IO at all, I guess it could easily call out t
 There's a basic implementation of futures, tasks etc. which can be used to implement coroutines
 
 [Demo live coding environment](async_pyodide_demo.html)
+
+<a onclick="async_demo()">Demo of two async coroutines</a>
+
+
+
+<script>
+function async_demo()
+{
+	localStorage.lastCode = `
+async def woo(delay):
+    while True:
+        print("WOO")
+        await asleep(delay)
+        
+async def buzz(delay):
+    while True:
+        print("Buzz")
+        await asleep(delay)
+
+await gather(woo(2),buzz(.3))
+`
+window.location.href="async_pyodide_demo.html";
+}
+</script>
