@@ -40,8 +40,8 @@ async def gather(*coroutines,return_exceptions=False):
     for c in coroutines:
         task=__jsloop.create_task(c)    
         allTasks.append(task)
-    for c in coroutines:
-        await c
+    for t in allTasks:
+        await t
 
 # task or future (future = task without a coroutine to call)
 class JSAsyncTask():
