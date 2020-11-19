@@ -35,7 +35,7 @@ async def aimport(namePairs):
     for (module,alias) in namePairs:
         await _aimport(module,alias)
 
-async def gather(*coroutines,*,return_exceptions=False):
+async def gather(coroutines*,*,return_exceptions=False):
     allTasks=[]
     for c in coroutines:
         task=__jsloop.create_task(c)    
