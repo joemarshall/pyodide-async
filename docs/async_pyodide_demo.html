@@ -131,7 +131,7 @@ function run_code()
     document.getElementById("script_output").innerHTML="";
 	localStorage.lastCode=editor.getSession().getValue();
 	src_code=editor.getSession().getValue();
-	if(document.getElementById("convert_code").value)
+	if(document.getElementById("convert_code").checked)
 	{
 		pyodide.runPythonAsync("async_pyodide.__js_run_async(js.src_code)").then(value=>{},reason=>{python_err_print(reason);});
 	}else
