@@ -106,7 +106,7 @@ class _LineOffsetter(NodeTransformer):
 
 
 # todo make this for multiple code modules (and maybe to guess class types from the code..)
-def __compile_with_async_sleep(code_str):
+def __compile_with_async_sleep(code_str,compile_mode='exec'):
     #print("WOO")
     asleep_def="""
 import sys
@@ -143,7 +143,7 @@ async def __async_main():
     
 #    print("NEWTREE")
 #    print(dump(newTree))
-    return compile(newTree,filename="your_code.py",mode='exec')
+    return compile(newTree,filename="your_code.py",mode=compile_mode)
 
 `;
 

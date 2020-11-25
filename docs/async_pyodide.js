@@ -2,17 +2,6 @@ var async_pyodide_src=
 `
 import asyncio,selectors,sys,js
 
-async def woo():
-    print("woo")
-    await asyncio.sleep(1)
-    print("Boo")
-    
-async def yay():
-    for c in range(5):
-        print("Yay")
-        await asyncio.sleep(0.1)
-        print("YAY")
-
 class JSSelector(selectors.BaseSelector):
     def __init__(self):
         super().__init__()
@@ -43,9 +32,11 @@ class JSSelector(selectors.BaseSelector):
 
 class CustomLoop(asyncio.BaseEventLoop):
     def __init__(self):
+        self.in_tick=False
         self._selector=JSSelector()
         super().__init__()
         asyncio.set_event_loop(self)
+        self.started=False
         
     def get_delay(self):
         return self._selector.get_delay()
@@ -72,9 +63,36 @@ class CustomLoop(asyncio.BaseEventLoop):
     	        }
             }
         """)
-        js.pyodide_async_tick()
+        self.started=True
+        asyncio.events._set_running_loop(self)
+        js.pyodide_async_tick()        
     
+    def _run_once(self):
+        self.in_tick=True
+        retVal=super()._run_once()
+        self.in_tick=False
+        return retVal
+    
+    def call_later(self, delay, callback, *args):
+        retVal=super().call_later(delay,callback,*args)
+        if not self.in_tick and self.started:
+            js.pyodide_async_tick()
+        return retVal
+    
+    def call_soon(self, callback, *args, context=None):
+        retVal= super().call_soon(callback,*args,context=context)
+        if not self.in_tick and self.started:
+            js.pyodide_async_tick()
+        return retVal
+
+    def call_at(self, when, callback, *args, context=None):
+        retVal= super().call_at(when,callback,*args,context=context)
+        if not self.in_tick and self.started:
+            js.pyodide_async_tick()
+        return retVal
+
     def set_task_to_run_until_done(self,mainTask):
+        asyncio.set_event_loop(self)
         task=self.create_task(self.stop_when_task_done(mainTask))
         self.start()
     

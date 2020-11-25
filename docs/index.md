@@ -19,6 +19,7 @@ There's a basic implementation of futures, tasks etc. which can be used to imple
 <a onclick="sync_demo()">Demo of running sync code in browser with sleep</a>
 
 <a onclick="timing_demo()">Time comparison of async vs syncified function calls</a>
+<a onclick="console_demo()">Interactive console (WIP)</a>
 
 
 <script>
@@ -141,4 +142,25 @@ _loop.set_task_to_run_until_done(mainLoop())
 window.location.href="asyncio_pyodide.html";
 }
 
+function  console_demo()
+{
+
+	localStorage.lastCode = `
+c=0
+
+import asyncio
+from pyodide_console import AsyncInteractiveConsole
+
+import async_pyodide 
+
+async def main_loop():
+    console=AsyncInteractiveConsole()
+    await console.interact_async()
+
+_loop=async_pyodide.CustomLoop()
+
+_loop.set_task_to_run_until_done(main_loop())    
+`;
+window.location.href="asyncio_pyodide.html";
+}
 </script>

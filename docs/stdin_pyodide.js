@@ -1,4 +1,6 @@
-var pyodide_print_area=undefined;
+var pyodide_stdin_area=undefined;
+
+
 
 // TODO: make this send messages so it works with web worker
 function print_pyodide_stdout(str)
@@ -27,9 +29,9 @@ function print_pyodide_stderr(str)
 	}
 }
 
-function print_pyodide_load(print_area,message_object)
+function stdin_pyodide_load(input_area)
 {
 	pyodide_print_area=print_area;
-	pyodide.globals.sys.stdout.write=print_pyodide_stdout;
+	pyodide.globals.sys.stdin.write=prints_pyodide_stdout;
 	pyodide.globals.sys.stderr.write=print_pyodide_stderr;
 }
