@@ -22,20 +22,30 @@ There's a basic implementation of futures, tasks etc. which can be used to imple
 
 
 <script>
+
 function async_demo()
 {
 	localStorage.lastCode = `
-async def woo(delay):
-    while True:
-        print("WOO")
-        await asleep(delay)
-        
-async def buzz(delay):
-    while True:
-        print("Buzz")
-        await asleep(delay)
+import asyncio
 
-await gather(woo(2),buzz(.3))
+async def mainLoop():    
+    async def woo(delay):
+        for c in range(3):
+            await asyncio.sleep(delay)
+            print("WOO")
+            
+    async def buzz(delay):
+        for c in range(10):
+            await asyncio.sleep(delay)
+            print("Buzz")
+
+    await asyncio.gather(woo(2),buzz(.3))
+    print("Main loop done")
+_loop=async_pyodide.CustomLoop()
+asyncio.set_event_loop(_loop)
+
+_loop.set_task_to_run_until_done(mainLoop())
+
 `
 window.location.href="asyncio_pyodide.html";
 }
@@ -54,6 +64,7 @@ window.location.href="asyncio_pyodide.html";
 function timing_demo()
 {
 	localStorage.lastCode = `
+
 c=0
 
 import asyncio
@@ -91,19 +102,22 @@ async def asyncDoMaths():
     return c    
     
 async def mainLoop():
-    NUM_ITERATIONS=100000
+    NUM_ITERATIONS=1000000
     with timing("SYNC Nothing"):
         for x in range(NUM_ITERATIONS):
             syncDoNothing()
+    await asyncio.sleep(0)
 
     with timing("ASYNC Nothing"):
         for x in range(NUM_ITERATIONS):
             await asyncDoNothing()
+    await asyncio.sleep(0)
 
     c=0
     with timing("SYNC Do maths"):
         for x in range(NUM_ITERATIONS):
             syncDoMaths()
+    await asyncio.sleep(0)
 
     c=0
     with timing("ASYNC Do maths"):
