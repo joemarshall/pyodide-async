@@ -12,7 +12,7 @@ I haven't implemented asynchronous IO at all, I guess it could easily call out t
 
 There's a basic implementation of futures, tasks etc. which can be used to implement coroutines
 
-[Demo live coding environment](async_pyodide_demo.html)
+[Demo live coding environment](asyncio_pyodide.html)
 
 <a onclick="async_demo()">Demo of two async coroutines</a>
 
@@ -37,7 +37,7 @@ async def buzz(delay):
 
 await gather(woo(2),buzz(.3))
 `
-window.location.href="asyncio_pyodide_demo.html";
+window.location.href="asyncio_pyodide.html";
 }
 
 function sync_demo()
@@ -48,7 +48,7 @@ while True:
     print("woo")
     time.sleep(1.0)
     `
-window.location.href="asyncio_pyodide_demo.html";
+window.location.href="asyncio_pyodide.html";
 }
 
 function timing_demo()
@@ -120,6 +120,7 @@ asyncio.set_event_loop(_loop)
 
 _loop.set_task_to_run_until_done(mainLoop())
 `;
+window.location.href="asyncio_pyodide.html";
 }
 
 </script>
