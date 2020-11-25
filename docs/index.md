@@ -53,8 +53,10 @@ window.location.href="asyncio_pyodide.html";
 function sync_demo()
 {
 	localStorage.lastCode = `
+# this is sync code. If you check the check box it will be converted to async code and
+# the timing should work okay
 import time
-while True:
+for c in range(50):
     print("woo")
     time.sleep(1.0)
     `
