@@ -55,10 +55,12 @@ function sync_demo()
 	localStorage.lastCode = `
 # this is sync code. If you check the check box it will be converted to async code and
 # the timing should work okay
+
 import time
-for c in range(50):
+for c in range(10):
     print("woo")
     time.sleep(1.0)
+print("Done")    import time
     `
 window.location.href="asyncio_pyodide.html";
 }
