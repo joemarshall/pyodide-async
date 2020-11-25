@@ -18,6 +18,7 @@ There's a basic implementation of futures, tasks etc. which can be used to imple
 
 <a onclick="sync_demo()">Demo of running sync code in browser with sleep</a>
 
+<a onclick="timing_demo()">Time comparison of async vs syncified function calls</a>
 
 
 <script>
@@ -36,7 +37,7 @@ async def buzz(delay):
 
 await gather(woo(2),buzz(.3))
 `
-window.location.href="async_pyodide_demo.html";
+window.location.href="asyncio_pyodide_demo.html";
 }
 
 function sync_demo()
@@ -47,7 +48,78 @@ while True:
     print("woo")
     time.sleep(1.0)
     `
-window.location.href="async_pyodide_demo.html";
+window.location.href="asyncio_pyodide_demo.html";
+}
+
+function timing_demo()
+{
+	localStorage.lastCode = `
+c=0
+
+import asyncio
+from time import time
+from contextlib import contextmanager
+
+@contextmanager
+def timing(description):
+    retVals={}
+    start = time()
+    yield retVals
+    elapsed_time = time() - start
+    retVals["elapsed"]=elapsed_time
+    print(f"{description}: {elapsed_time}")
+
+def syncDoNothing():
+    pass
+    
+async def asyncDoNothing():
+    pass
+
+def syncDoMaths():
+    global c
+    c=(c+1.5)*37.2
+    for d in range(10):
+        c+=d
+    return c
+    
+    
+async def asyncDoMaths():
+    global c
+    c=(c+1.5)*37.2
+    for d in range(10):
+        c+=d
+    return c    
+    
+async def mainLoop():
+    NUM_ITERATIONS=100000
+    with timing("SYNC Nothing"):
+        for x in range(NUM_ITERATIONS):
+            syncDoNothing()
+
+    with timing("ASYNC Nothing"):
+        for x in range(NUM_ITERATIONS):
+            await asyncDoNothing()
+
+    c=0
+    with timing("SYNC Do maths"):
+        for x in range(NUM_ITERATIONS):
+            syncDoMaths()
+
+    c=0
+    with timing("ASYNC Do maths"):
+        for x in range(NUM_ITERATIONS):
+            await asyncDoMaths()
+
+    
+
+from aimport_pyodide import aimport
+import async_pyodide 
+
+_loop=async_pyodide.CustomLoop()
+asyncio.set_event_loop(_loop)
+
+_loop.set_task_to_run_until_done(mainLoop())
+`;
 }
 
 </script>

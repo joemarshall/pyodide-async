@@ -107,7 +107,7 @@ class _LineOffsetter(NodeTransformer):
 
 # todo make this for multiple code modules (and maybe to guess class types from the code..)
 def __compile_with_async_sleep(code_str):
-    print("WOO")
+    #print("WOO")
     asleep_def="""
 import sys
 import asyncio
@@ -119,7 +119,6 @@ asyncio.set_event_loop(_loop)
 
 async def __async_main():
 """
-    print("YAY")
     extraLines=len(asleep_def.split("\n"))-1
     
     all_code=asleep_def
@@ -127,7 +126,7 @@ async def __async_main():
         all_code+="    "+line+"\n"
     all_code+="_loop.set_task_to_run_until_done(__async_main())\n"
 
-    print(all_code)    
+#    print(all_code)    
 
     oldTree=parse(all_code, mode='exec')        
 #    print("OLDTREE")

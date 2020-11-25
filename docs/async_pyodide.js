@@ -58,10 +58,10 @@ class CustomLoop(asyncio.BaseEventLoop):
             var pyodide_async_loop_id=-1;
             function pyodide_async_tick()
             {
-                //console.log("tick:"+pyodide_async_timeout)
         	    loop=pyodide.globals.asyncio.get_event_loop()
         	    loop._run_once();
         	    pyodide_async_timeout=loop.get_delay()
+                console.log("tick:"+pyodide_async_timeout)
                 if(pyodide_async_loop_id!=-1)
 	            {
         		    window.clearInterval(pyodide_async_loop_id);
