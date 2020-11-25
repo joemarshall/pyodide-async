@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+  <script src="https://pyodide-cdn2.iodide.io/v0.15.0/full/pyodide.js"></script>
+  <script src="async_pyodide.js"></script>
+  <script src="print_pyodide.js"></script>
+  <script src="pyodide_worker.js"></script>
+  <script>
+  
+	
+
+
+  </script>
+
+</head>
+<body style="min-height:100vh" onload="startEditor()">
+
+<div id="codearea" style="width:100%;height:20vh;">
+import js
+js.python_print("WOO\n")
+</div>
+
+
+		<script>
+			window.addEventListener("beforeunload", function(event) { 
+			localStorage.lastCode=editor.getSession().getValue();});
+		
+			var require = { paths: {  'vs': 'https://cdn.jsdelivr.net/npm/monaco-editor@0.21.2/min/vs'  } };
+		</script>
+		<script src="https://cdn.jsdelivr.net/npm/ace-builds/src-min-noconflict/ace.js"></script>
+		
+		<script>
+			function startEditor()
+			{
+				editor = ace.edit("codearea");
+				editor.session.setMode("ace/mode/python");
+				if (localStorage.lastCode) 
+				{
+					editor.session.setValue(localStorage.lastCode);
+				}
+			
+			}
+		</script>
+
+<div>
+<button disabled="true" id="run_button" onclick="run_code()">Run code</button>
+<input id="convert_code" type="checkbox" checked>Convert to async code</input>
+</div>
+<div id="output_area" style="font-family:monospace; white-space: pre-wrap;height:50vh;overflow: scroll;">
+<div id="script_output">OUTPUT FROM SCRIPT GOES HERE</div>
+</div>
+
+
+<script>
+
+
+languagePluginLoader
+.then(() => {
+	console.log("WOO");
+	async_pyodide_load();
+	print_pyodide_load(document.getElementById("script_output"))
+	document.getElementById("run_button").disabled=false;	
+	
+})
+
+function run_code()
+{
+    document.getElementById("script_output").innerHTML="";
+	localStorage.lastCode=editor.getSession().getValue();
+	src_code=editor.getSession().getValue();
+	pyodide.runPythonAsync(src_code).then(value=>{},reason=>{print_pyodide_stderr(reason);});
+}
+</script>
+
+
+
+</body>
+</html>
