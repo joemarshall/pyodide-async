@@ -59,11 +59,11 @@ class _MakeAsyncCalls(NodeTransformer):
         allNames=name.split(".")        
         retVal=Name(id=allNames[0],ctx=Load())
         allNames=allNames[1:]
-        print(dump(retVal))
+        #print(dump(retVal))
         while len(allNames)>0:
             retVal=Attribute(value=retVal,attr=allNames[0],ctx=Load())
             allNames=allNames[1:]
-        print(dump(retVal))
+        #print(dump(retVal))
         return retVal
             
     
