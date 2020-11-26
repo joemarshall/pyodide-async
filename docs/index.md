@@ -19,6 +19,7 @@ There's a basic implementation of futures, tasks etc. which can be used to imple
 <a onclick="sync_demo()">Demo of running sync code in browser with sleep</a>
 
 <a onclick="timing_demo()">Time comparison of async vs syncified function calls</a>
+
 <a onclick="console_demo()">Interactive console (WIP)</a>
 
 
@@ -146,8 +147,6 @@ function  console_demo()
 {
 
 	localStorage.lastCode = `
-c=0
-
 import asyncio
 from pyodide_console import AsyncInteractiveConsole
 
