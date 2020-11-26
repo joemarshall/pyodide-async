@@ -138,6 +138,7 @@ async function pyodide_wait_for_console_line(prompt_text,callback)
                 // move cursor back to event line if user has clicked elsewhere
                 if (key.code=='Enter')
                 {
+                    evt.preventDefault();
                     fullLine=promptSpan.innerText;
                     fullLine=fullLine.substring(prompt_text.length)
                     promptSpan.textContent+="\n";
