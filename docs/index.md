@@ -154,7 +154,7 @@ import async_pyodide
 
 async def main_loop():
     console=AsyncInteractiveConsole()
-    await console.interact_async()
+    await console.interact_async(exitmsg="Exiting console, re-run to restart")
 
 _loop=async_pyodide.CustomLoop()
 

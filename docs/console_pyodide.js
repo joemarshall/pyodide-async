@@ -55,10 +55,12 @@ class AsyncInteractiveConsole(code.InteractiveConsole):
                 self.write("\nKeyboardInterrupt\n")
                 self.resetbuffer()
                 more = 0
+            except SystemExit:
+                break
         if exitmsg is None:
             self.write('now exiting %s...\n' % self.__class__.__name__)
         elif exitmsg != '':
-            self.write('%s\n' % exitmsg)        
+            self.write('%s\n' % exitmsg)
     
     async def async_raw_input(self,prompt_text):
         return await self.async_readline(prompt_text)
