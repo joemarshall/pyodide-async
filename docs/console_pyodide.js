@@ -1,6 +1,7 @@
-var pyodide_console_area=undefined;
+var pyodide_console_area = undefined;
 var pyodide_read_promise = undefined;
-
+var pyodide_paste_promise= undefined;
+var pyodide_read_arrows_promise=undefined;
 var pyodide_console_src=String.raw`
 import code 
 import js
@@ -59,14 +60,13 @@ class AsyncInteractiveConsole(code.InteractiveConsole):
         elif exitmsg != '':
             self.write('%s\n' % exitmsg)        
     
-    async def async_raw_input(self,prompt):
-        print(prompt+"\n")
-        return await self.async_readline()
+    async def async_raw_input(self,prompt_text):
+        return await self.async_readline(prompt_text)
         
-    async def async_readline(self):
+    async def async_readline(self,prompt_text):
         _loop=asyncio.get_running_loop()
         future = _loop.create_future()
-        fullString=js.pyodide_wait_for_console_line(future.set_result)
+        fullString=js.pyodide_wait_for_console_line(prompt_text,future.set_result)
         await future
         retVal=future.result()
         return retVal
@@ -75,25 +75,132 @@ class AsyncInteractiveConsole(code.InteractiveConsole):
 
 `;
 
-// TODO: make this send messages so it works with web worker
-async function pyodide_wait_for_console_line(callback)
+// keep line history
+// support ctrl+v / paste
+async function pyodide_wait_for_console_line(prompt_text,callback)
 {
     fullLine=""
 	if (pyodide_console_area)
 	{
+        //console.log("MAKE TRUE")
+        pyodide_console_area.setAttribute('contenteditable',true);
+        let promptSpan=document.createElement("span");
+        promptSpan.style="color:#00f;";
+        promptSpan.textContent=prompt_text;
+        pyodide_print_area.appendChild(promptSpan)
+        pyodide_print_area.scrollTop = pyodide_print_area.scrollHeight;
+        // move cursor to prompt line in div
+        let selection=window.getSelection();
+        let  eventline_pos=0;
+        let  eventline_offset=prompt_text.length;
+        selection.removeAllRanges();
+        selection.collapse(promptSpan.firstChild,eventline_offset);
+
+        let mouseDown=false;
         while(true)
         {
-            console.log("beforekey")
-            const key=await pyodide_read_promise();
-            console.log("gotkey"+":"+String.fromCharCode(key.charCode)+":"+key.code)
-            fullLine+=String.fromCharCode(key.charCode);
-            if (key.charCode==13)
+  //          console.log("beforekey")
+            const evt=await Promise.any([pyodide_read_promise(),pyodide_selectionchange_promise(),pyodide_paste_promise(),pyodide_mousedown_promise(),pyodide_mouseup_promise(),pyodide_read_arrows_promise()])
+//            const evt=await Promise.any([pyodide_read_promise(),pyodide_paste_promise()]);
+  //          console.log(evt);
+            if(evt.type=='keydown')
             {
-                console.log("Got line:"+fullLine)
-                console.log(callback)
-                // send line back to callback
-                callback(fullLine);
-                return
+/*                if(key.code=='ArrowLeft')
+                {
+                    // move cursor left
+                }
+                else if(key.code=='ArrowRight')
+                {
+                    // move cursor right
+                }*/ // left and right are handled by selection altering
+                if(evt.code=='ArrowUp')
+                {
+                    evt.preventDefault();
+                }
+                else if(evt.code=='ArrowDown')
+                {
+                    evt.preventDefault();
+                }else if(evt.code=='Backspace')
+                {
+                    spanOffset=selection.focusOffset;
+                    eventline_pos=spanOffset-eventline_offset;
+                    if(eventline_pos<=0)
+                    {
+                        // don't allow backspace to move left of line
+                        evt.preventDefault();
+                    }
+                }
+            }
+            if(evt.type=='keypress')
+            {
+                var key=evt;
+                //console.log("gotkey"+":"+String.fromCharCode(key.charCode)+":"+key.code)
+                // move cursor back to event line if user has clicked elsewhere
+                if (key.code=='Enter')
+                {
+                    fullLine=promptSpan.innerText;
+                    fullLine=fullLine.substring(prompt_text.length)
+                    promptSpan.textContent+="\n";
+                    //console.log("Got line:"+fullLine)
+                    // send line back to callback
+                    pyodide_console_area.setAttribute('contenteditable',false);
+                    callback(fullLine);
+                    return
+                }else 
+                {
+                    // insert key
+                    fullLine+=String.fromCharCode(key.charCode);
+                }
+            }else if(evt.type=='paste')
+            {
+                evt.preventDefault()
+                txt=evt.clipboardData.getData("text/plain")
+                insertPos=eventline_offset+eventline_pos;
+                curTxt=promptSpan.innerText
+                promptSpan.innerText= [curTxt.slice(0, insertPos), txt, curTxt.slice(insertPos)].join('');
+            }else if(evt.type=='mousedown')
+            {
+                mouseDown=true;
+            }
+            else if((evt.type=='selectionchange'&& mouseDown==false) || evt.type=='mouseup')
+            {
+                mouseDown=false;
+                if(selection.containsNode(pyodide_console_area,true))
+                {
+                    if(!mouseDown)
+                    {
+                        // if we are still in our span then update our cursor position
+                        //console.log(evt.type,selection.focusNode);
+                        
+                        if(selection.focusNode)
+                        {
+                            if(selection.focusNode.parentElement== promptSpan)
+                            {
+                                spanOffset=selection.focusOffset;
+                                eventline_pos=spanOffset-eventline_offset;
+                                if(eventline_pos<0)
+                                {
+                                    eventline_pos=0;
+                                    if(selection.isCollapsed)
+                                    {                           
+    //                                    selection.collapse(selection.focusNode,eventline_offset);
+                                    }
+                                }
+                                //console.log("Moved in span",eventline_pos);
+                            }else
+                            {
+                                if(selection.isCollapsed)
+                                {
+                                    // keep cursor in editing span at previous position
+                                    selection.collapse(promptSpan.firstChild,eventline_pos+eventline_offset);
+                                }
+                            }
+                        }
+                    }
+                }
+            }else
+            {
+                //console.log(evt.type);
             }
         }
 	}
@@ -102,7 +209,13 @@ async function pyodide_wait_for_console_line(callback)
 function console_pyodide_load(input_area)
 {
 	pyodide_console_area=input_area
-    pyodide_read_promise = () => new Promise(resolve => input_area.addEventListener('keypress', resolve, { once: true }));
+    input_area.addEventListener("drop", function(evt){evt.preventDefault(); }); // stop people dragging text around in the console
+    pyodide_read_arrows_promise = () => new Promise(resolve => pyodide_console_area.addEventListener('keydown', resolve, { once: true,capture:true }));
+    pyodide_read_promise = () => new Promise(resolve => pyodide_console_area.addEventListener('keypress', resolve, { once: true,capture:true }));
+    pyodide_paste_promise = () => new Promise(resolve => input_area.addEventListener('paste', resolve, { once: true }));
+    pyodide_selectionchange_promise = () => new Promise(resolve => document.addEventListener('selectionchange', resolve, { once: true }));
+    pyodide_mousedown_promise = () => new Promise(resolve => document.addEventListener('mousedown', resolve, { once: true }));
+    pyodide_mouseup_promise = () => new Promise(resolve => document.addEventListener('mouseup', resolve, { once: true }));
     
     pyodide.runPython(`
 import js           

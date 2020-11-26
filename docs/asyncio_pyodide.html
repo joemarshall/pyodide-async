@@ -49,8 +49,8 @@ js.python_print("WOO\n")
 <button disabled="true" id="run_button" onclick="run_code()">Run code</button>
 <input id="convert_code" type="checkbox">Convert sync to async code</input>
 </div>
-<div id="output_area" style="font-family:monospace; white-space: pre-wrap;height:50vh;overflow: scroll;">
-<div id="script_output" tabindex="1">OUTPUT FROM SCRIPT GOES HERE</div>
+<div id="script_output" style="font-family:monospace; white-space: pre-wrap;height:50vh;overflow: scroll;" draggable="false" contenteditable="false" tabindex="1">
+Initializing pyodide
 </div>
 
 
@@ -66,6 +66,7 @@ languagePluginLoader
 	aimport_pyodide_load();
     console_pyodide_load(document.getElementById("script_output"));
 	document.getElementById("run_button").disabled=false;	
+	document.getElementById("script_output").innerHTML="Pyodide Initialized OK";	
 	
 })
 

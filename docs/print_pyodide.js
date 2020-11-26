@@ -5,10 +5,22 @@ function print_pyodide_stdout(str)
 {
 	if (pyodide_print_area)
 	{
-		// this uses a dummy element to convert tag characters quotes etc. to html
-		dummy=document.createElement("span");
-		dummy.textContent=str;
-		pyodide_print_area.innerHTML+=dummy.innerHTML;
+        let allLines=str.split("\n")
+        for(let c=0;c<allLines.length;c++)
+        {
+            line=allLines[c];
+            lineSpan=document.createElement("span");
+            lineSpan.textContent=line;
+            if(c<allLines.length-1)
+            {
+                lineSpan.textContent+="\n";
+            }
+            pyodide_print_area.appendChild(lineSpan)
+            pyodide_print_area.scrollTop = pyodide_print_area.scrollHeight;
+        }
+	}else
+	{
+		console.log("Couldn't print:"+str);
 	}
 }
 
@@ -17,10 +29,20 @@ function print_pyodide_stderr(str)
 	if (pyodide_print_area)
 	{
 		// this uses a dummy element to convert tag characters quotes etc. to html
-		dummy=document.createElement("span");
-		dummy.textContent=str;
-		dummy.style="color:#f00;";
-		pyodide_print_area.innerHTML+=dummy.outerHTML;
+        let allLines=str.split("\n")
+        for(let c=0;c<allLines.length;c++)
+        {
+            line=allLines[c];
+            lineSpan=document.createElement("span");
+            lineSpan.style="color:#f00;";
+            lineSpan.textContent=line;
+            if(c<allLines.length-1)
+            {
+                lineSpan.textContent+="\n";
+            }
+            pyodide_print_area.appendChild(lineSpan)
+            pyodide_print_area.scrollTop = pyodide_print_area.scrollHeight;
+        }
 	}else
 	{
 		console.log("Couldn't print:"+str);
