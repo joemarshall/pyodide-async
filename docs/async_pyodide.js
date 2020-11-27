@@ -110,6 +110,8 @@ class CustomLoop(asyncio.BaseEventLoop):
         if not future.done():
             raise RuntimeError('Event loop stopped before Future completed.')
         return future.result()
+                
+
 
 `;
 

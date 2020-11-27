@@ -8,7 +8,11 @@ import js
 import sys
 import asyncio
 
+import rlcompleter
+
 class AsyncInteractiveConsole(code.InteractiveConsole):
+
+
     async def interact_async(self,banner=None,exitmsg=None):
         """Closely emulate the interactive Python console.
         The optional banner argument specifies the banner to print
@@ -22,6 +26,7 @@ class AsyncInteractiveConsole(code.InteractiveConsole):
         printing an exit message. If exitmsg is not given or None,
         a default message is printed.
         """
+        self.completer=rlcompleter.Completer()
         try:
             sys.ps1
         except AttributeError:
@@ -68,7 +73,7 @@ class AsyncInteractiveConsole(code.InteractiveConsole):
     async def async_readline(self,prompt_text):
         _loop=asyncio.get_running_loop()
         future = _loop.create_future()
-        fullString=js.pyodide_wait_for_console_line(prompt_text,future.set_result)
+        fullString=js.pyodide_wait_for_console_line(prompt_text,future.set_result,self.completer)
         await future
         retVal=future.result()
         return retVal
@@ -77,9 +82,12 @@ class AsyncInteractiveConsole(code.InteractiveConsole):
 
 `;
 
+let pyodide_history_lines=[]
+let pyodide_history_line=0;
+
 // keep line history
 // support ctrl+v / paste
-async function pyodide_wait_for_console_line(prompt_text,callback)
+async function pyodide_wait_for_console_line(prompt_text,callback,completer)
 {
     fullLine=""
 	if (pyodide_console_area)
@@ -98,6 +106,9 @@ async function pyodide_wait_for_console_line(prompt_text,callback)
         selection.removeAllRanges();
         selection.collapse(promptSpan.firstChild,eventline_offset);
 
+        let completionNumber=0;
+        let completionBase="";
+
         let mouseDown=false;
         while(true)
         {
@@ -107,22 +118,107 @@ async function pyodide_wait_for_console_line(prompt_text,callback)
   //          console.log(evt);
             if(evt.type=='keydown')
             {
-/*                if(key.code=='ArrowLeft')
+                console.log(evt.code);
+                if(evt.key=='Tab')
                 {
-                    // move cursor left
-                }
-                else if(key.code=='ArrowRight')
-                {
-                    // move cursor right
-                }*/ // left and right are handled by selection altering
-                if(evt.code=='ArrowUp')
-                {
+                    if(completionNumber==0)
+                    {
+                        spanOffset=selection.focusOffset;
+                        eventline_pos=spanOffset-eventline_offset;
+
+                        fullLine=promptSpan.innerText;
+                        fullLine=fullLine.substring(prompt_text.length)
+                        
+                        completionBase=fullLine.substring(0,eventline_pos)
+                    }
+                        
+                    // tab completion
+                    completion=completer.complete(completionBase,completionNumber)
+                    if (completion==undefined)
+                    {
+                        completionNumber=0;
+                        promptSpan.innerText=prompt_text+completionBase;
+                    }else
+                    {
+                        promptSpan.innerText=prompt_text+completion;
+                        completionNumber+=1;
+                    }
+                    selection.collapse(promptSpan.firstChild,promptSpan.innerText.length);
+                    console.log(completion+":"+completionNumber)
+                    
+                    // unless it is in blank space offset
                     evt.preventDefault();
                 }
-                else if(evt.code=='ArrowDown')
+                if(evt.code=='ArrowLeft')
                 {
+                    // reset tab completion
+                    completionNumber=0;
+                }
+                else if(evt.code=='ArrowRight')
+                {
+                    // reset tab completion
+                    completionNumber=0;
+                }
+                else if(evt.key=='Home')
+                {
+                    if(evt.getModifierState("Shift"))
+                    {
+                        let r=new Range();
+                        spanOffset=selection.focusOffset;
+                        eventline_pos=spanOffset-eventline_offset;                        
+                        r.setEnd(promptSpan.firstChild,eventline_pos+eventline_offset);
+                        r.setStart(promptSpan.firstChild,prompt_text.length);
+                        selection.removeAllRanges();
+                        selection.addRange(r);
+                        console.log("HM");
+                    }else
+                    {
+                        selection.collapse(promptSpan.firstChild,prompt_text.length);
+                    }
                     evt.preventDefault();
-                }else if(evt.code=='Backspace')
+                }
+                else if(evt.key=='End')
+                {
+                    if(evt.getModifierState("Shift"))
+                    {
+                        spanOffset=selection.focusOffset;
+                        eventline_pos=spanOffset-eventline_offset;                        
+                        let r=new Range();
+                        r.setStart(promptSpan.firstChild,eventline_pos+eventline_offset);
+                        r.setStart(promptSpan.firstChild,promptSpan.innerText.length);
+                        selection.removeAllRanges();
+                        selection.addRange(r);
+                    }else
+                    {
+                        selection.collapse(promptSpan.firstChild,promptSpan.innerText.length);
+                        evt.preventDefault();
+                        console.log("ED");
+                    }
+                }
+                else if(evt.key=='ArrowDown')
+                {
+                    // load next in history if it exists
+                    if(pyodide_history_line<pyodide_history_lines.length-1)
+                    {
+                        // move to next line
+                        pyodide_history_line+=1;
+                        promptSpan.innerText=prompt_text+pyodide_history_lines[pyodide_history_line];
+                        selection.collapse(promptSpan.firstChild,promptSpan.innerText.length);
+                    }
+                    evt.preventDefault();
+                }
+                else if(evt.code=='ArrowUp')
+                {
+                    // load previous history line
+                    if(pyodide_history_line>0)
+                    {
+                        pyodide_history_line-=1;
+                        promptSpan.innerText=prompt_text+pyodide_history_lines[pyodide_history_line];
+                        selection.collapse(promptSpan.firstChild,promptSpan.innerText.length);
+                    }
+                    evt.preventDefault();
+                }
+                else if(evt.key=='Backspace')
                 {
                     spanOffset=selection.focusOffset;
                     eventline_pos=spanOffset-eventline_offset;
@@ -131,14 +227,13 @@ async function pyodide_wait_for_console_line(prompt_text,callback)
                         // don't allow backspace to move left of line
                         evt.preventDefault();
                     }
+                    // reset tab completion
+                    completionNumber=0;
                 }
             }
             if(evt.type=='keypress')
             {
-                var key=evt;
-                //console.log("gotkey"+":"+String.fromCharCode(key.charCode)+":"+key.code)
-                // move cursor back to event line if user has clicked elsewhere
-                if (key.code=='Enter')
+                if (evt.code=='Enter')
                 {
                     evt.preventDefault();
                     fullLine=promptSpan.innerText;
@@ -147,12 +242,23 @@ async function pyodide_wait_for_console_line(prompt_text,callback)
                     //console.log("Got line:"+fullLine)
                     // send line back to callback
                     pyodide_console_area.setAttribute('contenteditable',false);
+                    // add to the history if not a duplicate 
+                    if(pyodide_history_lines[pyodide_history_lines.length-1]!=fullLine)
+                    {
+                        // only shift history position if we're on the last one already
+                        // or we've typed something new
+                        // consistent with standard python interpreter
+                        if(pyodide_history_line==pyodide_history_lines.length || fullLine!=pyodide_history_lines[pyodide_history_line])
+                        {
+                            pyodide_history_line=pyodide_history_lines.length+1;
+                        }
+                        pyodide_history_lines.push(fullLine);
+                    }
                     callback(fullLine);
                     return
-                }else 
+                }else
                 {
-                    // insert key
-                    fullLine+=String.fromCharCode(key.charCode);
+                    completionNumber=0;
                 }
             }else if(evt.type=='paste')
             {
